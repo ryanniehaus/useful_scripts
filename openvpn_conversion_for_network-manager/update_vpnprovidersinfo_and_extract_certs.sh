@@ -85,7 +85,7 @@ do
 		# copy all the other contents of the file, excluding any cert and auth lines that should already be in the new copy
 		cat "$ovpn_file" \
 			| dos2unix \
-			| grep -vE "^auth-user-pass[ \t]*$" \
+			| grep -vE "^auth-user-pass[ \t]*.*$" \
 			| grep -vE "^ca[ \t]*.*$" \
 			| grep -vE "^cert[ \t]*.*$" \
 			| grep -vE "^key[ \t]*.*$" \
