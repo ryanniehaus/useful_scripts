@@ -23,7 +23,7 @@ pushd "$THIS_SCRIPTS_DIR" > /dev/null
 
 #loop through all vpn urls containing download links to cert zips
 #TODO: look into adding https://www.vpnme.me/freevpn.html
-for freevpn_url in http://www.vpnbook.com/freevpn http://www.freevpn.me/accounts https://www.vpnkeys.com/get-free-vpn-instantly
+for freevpn_url in http://www.vpnbook.com/freevpn http://www.freevpn.me/accounts https://www.vpnkeys.com/get-free-vpn-instantly https://www.vpnme.me/freevpn.html
 do
 	echo Processing "$freevpn_url"
 	
@@ -46,8 +46,21 @@ do
 	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Username://' | unix2dos > username_password.txt
 	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Password://' | unix2dos >> username_password.txt
 	
-	# grab all zip file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
-	for suffix in $(cat index.html | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
+	# grab all download*.html file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
+	for suffix in $(cat index.html | grep -E "download[a-zA-Z0-9_]+\.html{0,1}" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep -E "download[a-zA-Z0-9_]+\.html{0,1}")
+	do
+		# Make sure we aren't just assuming the paths are relative
+	  suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
+	  if [ "$suffix_is_relative" == "/" ]
+	  then
+			wget -N "$url_domain""$suffix"
+		else
+			wget -N "$suffix"
+		fi
+	done
+	
+	# grab all zip file hrefs from the html files and download them, only if the timestamp is newer than the file we may currently have
+	for suffix in $(cat *.htm* | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
 	do
 		# Make sure we aren't just assuming the paths are relative
 	  suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
