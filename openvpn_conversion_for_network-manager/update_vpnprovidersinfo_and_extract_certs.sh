@@ -9,6 +9,10 @@
 #    - sort
 #    - unzip
 #    - wget
+#    - iconv
+#    - file
+#    - touch
+#    - stat
 # The script runs on a bash shell
 
 #get the current script's directory
