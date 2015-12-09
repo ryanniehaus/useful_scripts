@@ -43,8 +43,8 @@ do
 	wget -O index.html "$freevpn_url"
 	
 	# grab and store current username and password
-	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sort -du | sed 's/^Username://' | unix2dos > username_password.txt
-	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sort -du | sed 's/^Password://' | unix2dos >> username_password.txt
+	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Username://' | unix2dos > username_password.txt
+	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Password://' | unix2dos >> username_password.txt
 	
 	# grab all zip file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
 	for suffix in $(cat index.html | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
@@ -107,7 +107,7 @@ do
 		#grab original timestamp
 		filemodtime=$(stat -c%y "$ovpn_file" | sed 's/[ ]\+/ /g')
 		# replace the old copy with the new one
-		mv "$basename".NEW.ovpn "$ovpn_file"
+		mv -f "$basename".NEW.ovpn "$ovpn_file"
 		#preserve original timestamp
 		touch -m -d "$filemodtime" "$ovpn_file"
 	done
