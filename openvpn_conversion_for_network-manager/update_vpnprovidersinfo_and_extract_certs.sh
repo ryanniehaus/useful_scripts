@@ -17,8 +17,9 @@ THIS_SCRIPTS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 #make the current's script's directory our working directory
 pushd "$THIS_SCRIPTS_DIR" > /dev/null
 
-#loop through all vpn urls containing download links to cert zips and 
-for freevpn_url in http://www.vpnbook.com/freevpn
+#loop through all vpn urls containing download links to cert zips
+#TODO: look into adding https://www.vpnme.me/freevpn.html
+for freevpn_url in http://www.vpnbook.com/freevpn http://www.freevpn.me/accounts https://www.vpnkeys.com/get-free-vpn-instantly
 do
 	echo Processing "$freevpn_url"
 	
@@ -28,15 +29,18 @@ do
 	echo Domain "$url_domain"
 	
 	# create a subfolder for the domain and enter it
-	mkdir "$url_domain"
+	if [ ! -d "$url_domain" ]
+	then
+		mkdir "$url_domain"
+	fi
 	pushd "$url_domain" > /dev/null
 	
 	# grab the url and rename it to index.html
 	wget -O index.html "$freevpn_url"
 	
 	# grab and store current username and password
-	cat index.html | grep "Username:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sort -du | dos2unix | sed 's/^Username://' | unix2dos > username_password.txt
-	cat index.html | grep "Password:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sort -du | dos2unix | sed 's/^Password://' | unix2dos >> username_password.txt
+	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sort -du | sed 's/^Username://' | unix2dos > username_password.txt
+	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sort -du | sed 's/^Password://' | unix2dos >> username_password.txt
 	
 	# grab all zip file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
 	for suffix in $(cat index.html | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
@@ -54,7 +58,7 @@ do
 	# unzip all downloaded archives
 	for zipfile in $(echo *.zip)
 	do
-		unzip -ou "$zipfile" -d .
+		unzip -ouj "$zipfile" -d .
 	done
 
 	# for each openvpn file
@@ -95,9 +99,13 @@ do
 			| grep -vE "^secret[ \t]*.*$" \
 			| grep -vE "^tls-auth[ \t]*.*$" \
 			| unix2dos >> "$basename".NEW.ovpn
-			
+
+		#grab original timestamp
+		filemodtime=$(stat -c%y "$ovpn_file" | sed 's/[ ]\+/ /g')
 		# replace the old copy with the new one
 		mv "$basename".NEW.ovpn "$ovpn_file"
+		#preserve original timestamp
+		touch -m -d "$filemodtime" "$ovpn_file"
 	done
 	popd > /dev/null
 done
