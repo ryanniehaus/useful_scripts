@@ -107,7 +107,7 @@ do
 		#grab original timestamp
 		filemodtime=$(stat -c%y "$ovpn_file" | sed 's/[ ]\+/ /g')
 		# replace the old copy with the new one
-		mv "$basename".NEW.ovpn "$ovpn_file"
+		mv -f "$basename".NEW.ovpn "$ovpn_file"
 		#preserve original timestamp
 		touch -m -d "$filemodtime" "$ovpn_file"
 	done
