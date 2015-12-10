@@ -22,7 +22,6 @@ THIS_SCRIPTS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 pushd "$THIS_SCRIPTS_DIR" > /dev/null
 
 #loop through all vpn urls containing download links to cert zips
-#TODO: look into adding https://www.vpnme.me/freevpn.html
 for freevpn_url in http://www.vpnbook.com/freevpn http://www.freevpn.me/accounts https://www.vpnkeys.com/get-free-vpn-instantly https://www.vpnme.me/freevpn.html
 do
 	echo Processing "$freevpn_url"
