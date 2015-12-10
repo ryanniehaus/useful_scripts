@@ -124,7 +124,7 @@ do
 		# if the username and password were found, add a reference to that file near the start of the new ovpn copy (not currently supported by network-manager, but it would be nice if it was)
 		if [ "$username_password_contents" == "" ]
 		then
-			temp_server=$(cat "$ovpn_file" | dos2unix | sed 's/^remote \([^ ]\+\).*$/\1/')
+			temp_server=$(cat "$ovpn_file" | grep -E "^remote" | dos2unix | sed 's/^remote \([^ ]\+\).*$/\1/')
 			echo auth-user-pass "$temp_server"_username_password.txt >> "$basename".NEW.ovpn
 		else
 			echo auth-user-pass username_password.txt >> "$basename".NEW.ovpn
