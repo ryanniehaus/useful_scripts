@@ -45,6 +45,32 @@ do
 	# grab and store current username and password
 	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Username://' | unix2dos > username_password.txt
 	cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Password://' | unix2dos >> username_password.txt
+	username_password_contents=$(cat username_password.txt)
+	
+	# Parse user/pass from vpnme.me index file
+	if [ "$username_password_contents" == "" ]
+	then
+		rm username_password.txt
+		cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -A 36 "[^a-z] VPN List" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | grep -A 100 "Serveraddress" | grep -vE "^$" > server_user_pass_dump.txt
+		cat server_user_pass_dump.txt | grep -A 100 Serveraddress | grep -B 100 -m 2 ":" | head -n-1 | tail -n+2 > server_list.txt
+		cat server_user_pass_dump.txt | grep -A 100 Username | grep -B 100 -m 2 ":" | head -n-1 | tail -n+2 > user_list.txt
+		cat server_user_pass_dump.txt | grep -A 100 Password | tail -n+2 > pass_list.txt
+		rm server_user_pass_dump.txt
+		number_of_servers=$(cat server_list.txt | wc -l)
+		
+		for server_index in `seq 1 $number_of_servers`;
+    do
+    	temp_server=$(getent hosts $(tail -n+$server_index server_list.txt | head -n 1) | awk '{ print $1 }')
+    	temp_user=$(tail -n+$server_index user_list.txt | head -n 1)
+    	temp_pass=$(tail -n+$server_index pass_list.txt | head -n 1)
+    	echo "$temp_user" > "$temp_server"_username_password.txt
+    	echo "$temp_pass" >> "$temp_server"_username_password.txt
+    	unix2dos "$temp_server"_username_password.txt
+    done
+    rm server_list.txt
+    rm user_list.txt
+    rm pass_list.txt
+	fi
 	
 	# grab all download*.html file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
 	for suffix in $(cat index.html | grep -E "download[a-zA-Z0-9_]+\.html{0,1}" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep -E "download[a-zA-Z0-9_]+\.html{0,1}")
@@ -97,9 +123,11 @@ do
 		done
 		
 		# if the username and password were found, add a reference to that file near the start of the new ovpn copy (not currently supported by network-manager, but it would be nice if it was)
-		username_password_contents=$(cat username_password.txt)
-		if [ ! "$username_password_contents" == "" ]
+		if [ "$username_password_contents" == "" ]
 		then
+			temp_server=$(cat "$ovpn_file" | dos2unix | sed 's/^remote \([^ ]\+\).*$/\1/')
+			echo auth-user-pass "$temp_server"_username_password.txt >> "$basename".NEW.ovpn
+		else
 			echo auth-user-pass username_password.txt >> "$basename".NEW.ovpn
 		fi
 		
