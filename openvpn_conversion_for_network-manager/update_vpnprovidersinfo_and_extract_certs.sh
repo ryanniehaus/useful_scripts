@@ -50,23 +50,21 @@ do
 	if [ "$username_password_contents" == "" ]
 	then
 		rm username_password.txt
-		cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -A 36 "[^a-z] VPN List" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | grep -A 100 "Serveraddress" | grep -vE "^$" > server_user_pass_dump.txt
-		cat server_user_pass_dump.txt | grep -A 100 Serveraddress | grep -B 100 -m 2 ":" | head -n-1 | tail -n+2 > server_list.txt
+		cat index.html | iconv -csf $(file -b --mime-encoding index.html) -t ascii | dos2unix | grep -A 33 "[^a-z] OpenVPN List" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | grep -A 100 "Username" | grep -vE "^$" > server_user_pass_dump.txt
 		cat server_user_pass_dump.txt | grep -A 100 Username | grep -B 100 -m 2 ":" | head -n-1 | tail -n+2 > user_list.txt
 		cat server_user_pass_dump.txt | grep -A 100 Password | tail -n+2 > pass_list.txt
 		rm server_user_pass_dump.txt
-		number_of_servers=$(cat server_list.txt | wc -l)
+		number_of_servers=$(cat user_list.txt | wc -l)
 		
 		for server_index in `seq 1 $number_of_servers`;
     do
-    	temp_server=$(getent hosts $(tail -n+$server_index server_list.txt | head -n 1) | awk '{ print $1 }')
     	temp_user=$(tail -n+$server_index user_list.txt | head -n 1)
     	temp_pass=$(tail -n+$server_index pass_list.txt | head -n 1)
+    	temp_server=${temp_user:0:2}
     	echo "$temp_user" > "$temp_server"_username_password.txt
     	echo "$temp_pass" >> "$temp_server"_username_password.txt
     	unix2dos "$temp_server"_username_password.txt
     done
-    rm server_list.txt
     rm user_list.txt
     rm pass_list.txt
 	fi
@@ -124,7 +122,7 @@ do
 		# if the username and password were found, add a reference to that file near the start of the new ovpn copy (not currently supported by network-manager, but it would be nice if it was)
 		if [ "$username_password_contents" == "" ]
 		then
-			temp_server=$(cat "$ovpn_file" | grep -E "^remote" | dos2unix | sed 's/^remote \([^ ]\+\).*$/\1/')
+			temp_server=$(echo "$ovpn_file" | sed 's/^.\+_\([^_]\{2\}\)_.\+\.ovpn$/\1/')
 			echo auth-user-pass "$temp_server"_username_password.txt >> "$basename".NEW.ovpn
 		else
 			echo auth-user-pass username_password.txt >> "$basename".NEW.ovpn
