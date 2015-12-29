@@ -5,7 +5,9 @@ extract certs from the files as needed for network-manager, and extract username
 Please fork and submit pull requests if you have any useful modifications!
 The license (Up a directory) does not require it, but it's good practice anyway!
 
-USAGE:
+#USAGE
+
+The command takes this form:
 
 	update_vpnprovidersinfo_and_extract_certs.sh [output_dir [temp_dir]]
 	
