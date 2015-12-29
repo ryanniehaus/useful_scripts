@@ -1,0 +1,5 @@
+openvpn_conversion_for_network-manager/*/*.html
+openvpn_conversion_for_network-manager/*/*.zip
+openvpn_conversion_for_network-manager/*/*.pem
+openvpn_conversion_for_network-manager/*/*.ovpn
+openvpn_conversion_for_network-manager/*/*username_password.txt
