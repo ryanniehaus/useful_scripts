@@ -18,8 +18,42 @@
 #get the current script's directory
 THIS_SCRIPTS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+temp_num_args="$#"
+OUTPUT_DIR="$THIS_SCRIPTS_DIR"
+TEMPORARY_DIR="$THIS_SCRIPTS_DIR"
+if [ "$temp_num_args" == "2" ] 
+then
+	OUTPUT_DIR="$1"
+	TEMPORARY_DIR="$2"
+elif [ "$temp_num_args" == "1" ]
+then
+	OUTPUT_DIR="$1"
+elif [ ! "$temp_num_args" == "0" ]
+then
+	echo USAGE:
+	echo update_vpnprovidersinfo_and_extract_certs.sh [output_dir [temp_dir]]
+	echo output_dir is a path that is writeable by the executor of the process & stores only the files necessary for OpenVPN to work
+	echo temp_dir is a path that is writeable by the executor of the process & stores temporary files
+	echo if temp_dir is not provided, the script path is used
+	echo if output_dir is not provided, the script path is used
+	exit 1
+fi
+
+echo Using OUTPUT_DIR="$OUTPUT_DIR"
+echo Using TEMPORARY_DIR="$TEMPORARY_DIR"
+
+#remove any remnants in the output directory
+preexisting_output_files=$(echo "$OUTPUT_DIR"/*.ovpn "$OUTPUT_DIR"/*.pem "$OUTPUT_DIR"/*_username_password.txt)
+if [ ! -d "$OUTPUT_DIR" ]
+then
+	mkdir -v "$OUTPUT_DIR"
+elif [ ! "$preexisting_output_files" == "" ]
+then
+	rm -vrf "$OUTPUT_DIR"/*.ovpn "$OUTPUT_DIR"/*.pem "$OUTPUT_DIR"/*_username_password.txt
+fi
+
 #make the current's script's directory our working directory
-pushd "$THIS_SCRIPTS_DIR" > /dev/null
+pushd "$TEMPORARY_DIR" > /dev/null
 
 #loop through all vpn urls containing download links to cert zips
 for freevpn_url in http://www.vpnbook.com/freevpn http://www.freevpn.me/accounts https://www.vpnkeys.com/get-free-vpn-instantly https://www.vpnme.me/freevpn.html
@@ -46,14 +80,16 @@ do
 	desired_encoding="ascii"
 	encoding_conversion_command="iconv -c -s -f $index_mime_encoding -t $desired_encoding"
 	
-	cat index.html | $encoding_conversion_command | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Username://' | unix2dos > username_password.txt
-	cat index.html | $encoding_conversion_command | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Password://' | unix2dos >> username_password.txt
-	username_password_contents=$(cat username_password.txt)
+	base_username_password_filename="$url_domain"_username_password.txt
+	
+	cat index.html | $encoding_conversion_command | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Username://' | unix2dos > "$base_username_password_filename"
+	cat index.html | $encoding_conversion_command | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Password://' | unix2dos >> "$base_username_password_filename"
+	username_password_contents=$(cat "$base_username_password_filename")
 	
 	# Parse user/pass from vpnme.me index file
 	if [ "$username_password_contents" == "" ]
 	then
-		rm username_password.txt
+		rm "$base_username_password_filename"
 		cat index.html | $encoding_conversion_command | dos2unix | grep -A 33 "[^a-z] OpenVPN List" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | grep -A 100 "Username" | grep -vE "^$" > server_user_pass_dump.txt
 		cat server_user_pass_dump.txt | grep -A 100 Username | grep -B 100 -m 2 ":" | head -n-1 | tail -n+2 > user_list.txt
 		cat server_user_pass_dump.txt | grep -A 100 Password | tail -n+2 > pass_list.txt
@@ -65,9 +101,9 @@ do
 			temp_user=$(tail -n+$server_index user_list.txt | head -n 1)
 			temp_pass=$(tail -n+$server_index pass_list.txt | head -n 1)
 			temp_server=${temp_user:0:2}
-			echo "$temp_user" > "$temp_server"_username_password.txt
-			echo "$temp_pass" >> "$temp_server"_username_password.txt
-			unix2dos "$temp_server"_username_password.txt
+			echo "$temp_user" > "$temp_server"_"$base_username_password_filename"
+			echo "$temp_pass" >> "$temp_server"_"$base_username_password_filename"
+			unix2dos "$temp_server"_"$base_username_password_filename"
 		done
 		rm user_list.txt
 		rm pass_list.txt
@@ -127,9 +163,9 @@ do
 		if [ "$username_password_contents" == "" ]
 		then
 			temp_server=$(echo "$ovpn_file" | sed 's/^.\+_\([^_]\{2\}\)_.\+\.ovpn$/\1/')
-			echo auth-user-pass "$temp_server"_username_password.txt >> "$basename".NEW.ovpn
+			echo auth-user-pass "$temp_server"_"$base_username_password_filename" >> "$basename".NEW.ovpn
 		else
-			echo auth-user-pass username_password.txt >> "$basename".NEW.ovpn
+			echo auth-user-pass "$base_username_password_filename" >> "$basename".NEW.ovpn
 		fi
 		
 		# copy all the other contents of the file, excluding any cert and auth lines that should already be in the new copy
@@ -153,6 +189,8 @@ do
 		#preserve original timestamp
 		touch -m -d "$filemodtime" "$ovpn_file"
 	done
+	
+	cp -vrf ./*.ovpn ./*.pem ./*"$base_username_password_filename" "$OUTPUT_DIR"/
 	popd > /dev/null
 done
 popd > /dev/null
