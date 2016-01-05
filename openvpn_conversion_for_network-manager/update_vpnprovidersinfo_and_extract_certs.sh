@@ -112,7 +112,7 @@ do
 	fi
 	
 	# grab all download*.html file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
-	for suffix in $(cat index.html | grep -E "download[a-zA-Z0-9_]+\.html{0,1}" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep -E "download[a-zA-Z0-9_]+\.html{0,1}")
+	for suffix in $(cat index.html | $encoding_conversion_command | dos2unix | grep -E "download[a-zA-Z0-9_]+\.html{0,1}" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep -E "download[a-zA-Z0-9_]+\.html{0,1}")
 	do
 		# Make sure we aren't just assuming the paths are relative
 	  suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
@@ -125,16 +125,21 @@ do
 	done
 	
 	# grab all zip file hrefs from the html files and download them, only if the timestamp is newer than the file we may currently have
-	for suffix in $(cat *.htm* | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
+	for temp_html_filename in $(echo *.htm*)
 	do
-		# Make sure we aren't just assuming the paths are relative
-	  suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
-	  if [ "$suffix_is_relative" == "/" ]
-	  then
-			wget -N "$url_domain""$suffix"
-		else
-			wget -N "$suffix"
-		fi
+		temp_html_mime_encoding=$(file -b --mime-encoding "$temp_html_filename")
+		temp_encoding_conversion_command="iconv -c -s -f $temp_html_mime_encoding -t $desired_encoding"
+		for suffix in $(cat "$temp_html_filename" | $temp_encoding_conversion_command | dos2unix | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
+		do
+			# Make sure we aren't just assuming the paths are relative
+			suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
+			if [ "$suffix_is_relative" == "/" ]
+			then
+				wget -N "$url_domain""$suffix"
+			else
+				wget -N "$suffix"
+			fi
+		done
 	done
 
 	# unzip all downloaded archives
