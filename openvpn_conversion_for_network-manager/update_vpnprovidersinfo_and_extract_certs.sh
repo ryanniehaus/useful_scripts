@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #License info at https://github.com/ryanniehaus/useful_scripts/blob/master/LICENSE
 # You must have the following utilities install for this to work:
 #    - sed
@@ -61,7 +61,9 @@ do
 	echo Processing "$freevpn_url"
 	
 	# grab the domain name from the url
-	url_domain=$(echo "$freevpn_url" | sed 's/^[^:]\+:\/\/\([^\/]\+\).\+$/\1/')
+# not sure why this line doesn't work on FreeBSD
+#	url_domain=$(echo "$freevpn_url" | sed 's/^[^:]\+:\/\/\([^\/]\+\).\+$/\1/')
+	url_domain=$(echo "$freevpn_url" | sed 's/^https*:\/\///' | sed 's/^s*ftp:\/\///' | sed 's/\/.*$//g')
 	
 	echo Domain "$url_domain"
 	
