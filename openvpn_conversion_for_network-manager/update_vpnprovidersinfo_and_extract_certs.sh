@@ -30,12 +30,12 @@ then
 	OUTPUT_DIR="$1"
 elif [ ! "$temp_num_args" == "0" ]
 then
-	echo USAGE:
-	echo update_vpnprovidersinfo_and_extract_certs.sh [output_dir [temp_dir]]
-	echo output_dir is a path that is writeable by the executor of the process & stores only the files necessary for OpenVPN to work
-	echo temp_dir is a path that is writeable by the executor of the process & stores temporary files
-	echo if temp_dir is not provided, the script path is used
-	echo if output_dir is not provided, the script path is used
+	echo "USAGE:"
+	echo "update_vpnprovidersinfo_and_extract_certs.sh [output_dir [temp_dir]]"
+	echo "output_dir is a path that is writeable by the executor of the process and stores only the files necessary for OpenVPN to work"
+	echo "temp_dir is a path that is writeable by the executor of the process and stores temporary files"
+	echo "if temp_dir is not provided, the script path is used"
+	echo "if output_dir is not provided, the script path is used"
 	exit 1
 fi
 
@@ -61,8 +61,6 @@ do
 	echo Processing "$freevpn_url"
 	
 	# grab the domain name from the url
-# not sure why this line doesn't work on FreeBSD
-#	url_domain=$(echo "$freevpn_url" | sed 's/^[^:]\+:\/\/\([^\/]\+\).\+$/\1/')
 	url_domain=$(echo "$freevpn_url" | sed 's/^https*:\/\///' | sed 's/^s*ftp:\/\///' | sed 's/\/.*$//g')
 	
 	echo Domain "$url_domain"
@@ -84,15 +82,38 @@ do
 	
 	base_username_password_filename="$url_domain"_username_password.txt
 	
-	cat index.html | $encoding_conversion_command | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Username[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Username://' | unix2dos > "$base_username_password_filename"
-	cat index.html | $encoding_conversion_command | dos2unix | grep -EA 10 "OpenVPN[^,]" | grep -E "Password[ \t]*:" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | sed 's/^Password://' | unix2dos >> "$base_username_password_filename"
+	cat index.html \
+		| $encoding_conversion_command \
+		| dos2unix \
+		| grep -EA 10 "OpenVPN[^,]" \
+		| grep -E "Username[ \t]*:" \
+		| sed 's/[ \t]\+//g' \
+		| sed 's/<[^>]\+>//g' \
+		| sed 's/^Username://' \
+		| unix2dos > "$base_username_password_filename"
+	cat index.html \
+		| $encoding_conversion_command \
+		| dos2unix \
+		| grep -EA 10 "OpenVPN[^,]" \
+		| grep -E "Password[ \t]*:" \
+		| sed 's/[ \t]\+//g' \
+		| sed 's/<[^>]\+>//g' \
+		| sed 's/^Password://' \
+		| unix2dos >> "$base_username_password_filename"
 	username_password_contents=$(cat "$base_username_password_filename")
 	
 	# Parse user/pass from vpnme.me index file
 	if [ "$username_password_contents" == "" ]
 	then
 		rm "$base_username_password_filename"
-		cat index.html | $encoding_conversion_command | dos2unix | grep -A 33 "[^a-z] OpenVPN List" | sed 's/[ \t]\+//g' | sed 's/<[^>]\+>//g' | grep -A 100 "Username" | grep -vE "^$" > server_user_pass_dump.txt
+		cat index.html \
+			| $encoding_conversion_command \
+			| dos2unix \
+			| grep -A 33 "[^a-z] OpenVPN List" \
+			| sed 's/[ \t]\+//g' \
+			| sed 's/<[^>]\+>//g' \
+			| grep -A 100 "Username" \
+			| grep -vE "^$" > server_user_pass_dump.txt
 		cat server_user_pass_dump.txt | grep -A 100 Username | grep -B 100 -m 2 ":" | head -n-1 | tail -n+2 > user_list.txt
 		cat server_user_pass_dump.txt | grep -A 100 Password | tail -n+2 > pass_list.txt
 		rm server_user_pass_dump.txt
@@ -112,7 +133,13 @@ do
 	fi
 	
 	# grab all download*.html file hrefs from the url and download them, only if the timestamp is newer than the file we may currently have
-	for suffix in $(cat index.html | $encoding_conversion_command | dos2unix | grep -E "download[a-zA-Z0-9_]+\.html{0,1}" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep -E "download[a-zA-Z0-9_]+\.html{0,1}")
+	for suffix in $(cat index.html \
+		| $encoding_conversion_command \
+		| dos2unix \
+		| grep -E "download[a-zA-Z0-9_]+\.html{0,1}" \
+		| sed 's/[ \t]\+//g' \
+		| sed 's/.\+href="\([^"]\+\)".\+/\1/' \
+		| grep -E "download[a-zA-Z0-9_]+\.html{0,1}")
 	do
 		# Make sure we aren't just assuming the paths are relative
 	  suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
@@ -129,7 +156,13 @@ do
 	do
 		temp_html_mime_encoding=$(file -b --mime-encoding "$temp_html_filename")
 		temp_encoding_conversion_command="iconv -c -s -f $temp_html_mime_encoding -t $desired_encoding"
-		for suffix in $(cat "$temp_html_filename" | $temp_encoding_conversion_command | dos2unix | grep ".zip" | sed 's/[ \t]\+//g' | sed 's/.\+href="\([^"]\+\)".\+/\1/' | grep ".zip")
+		for suffix in $(cat "$temp_html_filename" \
+			| $temp_encoding_conversion_command \
+			| dos2unix \
+			| grep ".zip" \
+			| sed 's/[ \t]\+//g' \
+			| sed 's/.\+href="\([^"]\+\)".\+/\1/' \
+			| grep ".zip")
 		do
 			# Make sure we aren't just assuming the paths are relative
 			suffix_is_relative=$(echo "$suffix" | sed 's/^\(.\).\+$/\1/')
@@ -166,7 +199,8 @@ do
 			fi
 		done
 		
-		# if the username and password were found, add a reference to that file near the start of the new ovpn copy (not currently supported by network-manager, but it would be nice if it was)
+		# if the username and password were found, add a reference to that file near the start of the new ovpn copy
+		# (not currently supported by network-manager, but it would be nice if it was)
 		if [ "$username_password_contents" == "" ]
 		then
 			temp_server=$(echo "$ovpn_file" | sed 's/^.\+_\([^_]\{2\}\)_.\+\.ovpn$/\1/')
