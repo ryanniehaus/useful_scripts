@@ -1,3 +1,5 @@
+REM Use this batch file when you want to update packages (and perhaps install new ones if added to packageList.txt), using most previous settings
+
 set CURRENT_BATCH_DIR=%~dp0%
 cd /D %CURRENT_BATCH_DIR%
 powershell -executionpolicy bypass -File .\get_cygwin_installer.ps1

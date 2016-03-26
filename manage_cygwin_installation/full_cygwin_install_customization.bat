@@ -1,4 +1,4 @@
-REM Use this batch file when you want to use previous settings, but update package selections with the GUI.
+REM Use this batch file when you want to customize everything about the install process.  Use of other scripts will use mirror settings made here.
 
 set CURRENT_BATCH_DIR=%~dp0%
 cd /D %CURRENT_BATCH_DIR%
@@ -14,13 +14,11 @@ setup-x86_64.exe^
  -P %myPackages%^
  -a x86_64^
  -W^
- -q^
  -l %CURRENT_BATCH_DIR%^
  -n^
  -d^
  -g^
  -o^
- -A^
- -M
+ -A
  
 ..\bin\bash -c "export PATH=$PATH:../bin; chmod ug+rx ./dump_installed_packages.sh; ./dump_installed_packages.sh"
