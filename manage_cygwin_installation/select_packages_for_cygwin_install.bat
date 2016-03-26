@@ -1,10 +1,15 @@
 set CURRENT_BATCH_DIR=%~dp0%
 cd /D %CURRENT_BATCH_DIR%
 powershell -executionpolicy bypass -File .\get_cygwin_installer.ps1
+
+..\bin\bash -c "export PATH=$PATH:../bin; chmod ug+rx ./create_variable_files_for_cygwin_setup.sh; ./create_variable_files_for_cygwin_setup.sh"
+
+set /p myPackages= < %CURRENT_BATCH_DIR%myPackagesVariable.txt
+echo myPackages=%myPackages%
+
 setup-x86_64.exe^
  -R %CURRENT_BATCH_DIR%..^
- -P packageList.txt^
- -C categoryList.txt^
+ -P %myPackages%^
  -a x86_64^
  -W^
  -q^
@@ -14,9 +19,6 @@ setup-x86_64.exe^
  -g^
  -o^
  -A^
- -Y^
  -M
-
-..\bin\bash -c "export PATH=$PATH:../bin; echo PATH=$PATH"
-..\bin\bash -c "export PATH=$PATH:../bin; chmod ug+rx ./dump_installed_packages.sh"
-..\bin\bash -c "export PATH=$PATH:../bin; ./dump_installed_packages.sh"
+ 
+..\bin\bash -c "export PATH=$PATH:../bin; chmod ug+rx ./dump_installed_packages.sh; ./dump_installed_packages.sh"

@@ -8,4 +8,5 @@ then
 	cd "$SCRIPT_DIR"
 fi
 
-cygcheck -c -d | grep -vE "^Cygwin Package Information" | grep -vE "^Package" | sed 's|[[:space:]]\+| |g' | cut -f 1 -d " " > packageList.txt
+echo $(cat packageList.txt) | sed 's|[[:space:]]\+|,|g' > myPackagesVariable.txt
+

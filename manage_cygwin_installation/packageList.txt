@@ -9,6 +9,7 @@ coreutils
 cygutils
 cygwin
 dash
+dos2unix
 editrights
 file
 findutils
@@ -29,12 +30,16 @@ libffi6
 libgcc1
 libgdbm4
 libgmp10
+libgnutls28
+libhogweed2
 libiconv
 libiconv2
+libidn11
 libintl8
 liblzma5
 libmpfr4
 libncursesw10
+libnettle4
 libopenssl100
 libp11-kit0
 libpcre1
@@ -62,6 +67,7 @@ terminfo
 tzcode
 util-linux
 vim-minimal
+wget
 which
 xz
 zlib0
