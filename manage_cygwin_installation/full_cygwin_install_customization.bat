@@ -7,7 +7,6 @@ powershell -executionpolicy bypass -File .\get_cygwin_installer.ps1
 ..\bin\bash -c "export PATH=$PATH:../bin; chmod ug+rx ./create_variable_files_for_cygwin_setup.sh; ./create_variable_files_for_cygwin_setup.sh"
 
 set /p myPackages= < %CURRENT_BATCH_DIR%myPackagesVariable.txt
-echo myPackages=%myPackages%
 
 setup-x86_64.exe^
  -R %CURRENT_BATCH_DIR%..^
@@ -19,6 +18,7 @@ setup-x86_64.exe^
  -d^
  -g^
  -o^
- -A
+ -A^
+ -K http://cygwinports.org/ports.gpg
  
 ..\bin\bash -c "export PATH=$PATH:../bin; chmod ug+rx ./dump_installed_packages.sh; ./dump_installed_packages.sh"
